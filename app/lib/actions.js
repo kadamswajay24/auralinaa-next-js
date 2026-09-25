@@ -1,0 +1,213 @@
+'use server';
+
+import { signIn, signOut } from '@/auth';
+import { AuthError } from 'next-auth';
+import dbConnect from '@/lib/db';
+import User from '@/models/User';
+import Product from '@/models/Product';
+import { revalidatePath } from 'next/cache';
+import fs from 'fs';
+import path from 'path';
+
+export async function addProduct(prevState, formData) {
+  try {
+    await dbConnect();
+    
+    const name = formData.get('name');
+    const price = formData.get('price');
+    const category = formData.get('category');
+    const description = formData.get('description');
+    const unit = formData.get('unit');
+    const certification = formData.get('certification');
+    const imageFile = formData.get('image');
+
+    let imagePath = null;
+
+    if (imageFile && imageFile.size > 0) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      const filename = Date.now() + '-' + imageFile.name.replaceAll(' ', '_');
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+      
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      fs.writeFileSync(path.join(uploadDir, filename), buffer);
+      imagePath = `/uploads/${filename}`;
+    }
+
+    await Product.create({
+      name,
+      price,
+      category,
+      description,
+      unit,
+      certification,
+      stockQuantity: Number(formData.get('stockQuantity') || 0),
+      inStock: Number(formData.get('stockQuantity') || 0) > 0,
+      image: imagePath,
+    });
+
+    revalidatePath('/admin/products');
+    revalidatePath('/');
+    return { message: 'Product added successfully!' };
+  } catch (error) {
+    console.error('Error adding product:', error);
+    return { message: 'Failed to add product.' };
+  }
+}
+
+export async function deleteProduct(id) {
+  try {
+    await dbConnect();
+    await Product.findByIdAndDelete(id);
+    revalidatePath('/admin/products');
+    revalidatePath('/');
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw new Error('Failed to delete product.');
+  }
+}
+
+export async function toggleProductStock(id, inStock) {
+  try {
+    await dbConnect();
+    await Product.findByIdAndUpdate(id, { inStock });
+    revalidatePath('/admin/products');
+    revalidatePath('/');
+  } catch (error) {
+    console.error('Error updating stock:', error);
+    throw new Error('Failed to update stock.');
+  }
+}
+
+export async function updateProduct(id, prevState, formData) {
+  try {
+    await dbConnect();
+    
+    const name = formData.get('name');
+    const price = formData.get('price');
+    const category = formData.get('category');
+    const description = formData.get('description');
+    const unit = formData.get('unit');
+    const certification = formData.get('certification');
+    const stockQuantity = Number(formData.get('stockQuantity') || 0);
+    const imageFile = formData.get('image');
+
+    const updateData = {
+      name,
+      price,
+      category,
+      description,
+      unit,
+      certification,
+      stockQuantity,
+      inStock: stockQuantity > 0,
+    };
+
+    if (imageFile && imageFile.size > 0) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      const filename = Date.now() + '-' + imageFile.name.replaceAll(' ', '_');
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+      
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      fs.writeFileSync(path.join(uploadDir, filename), buffer);
+      updateData.image = `/uploads/${filename}`;
+    }
+
+    await Product.findByIdAndUpdate(id, updateData);
+
+    revalidatePath('/admin/products');
+    revalidatePath('/');
+    return { message: 'Product updated successfully!' };
+  } catch (error) {
+    console.error('Error updating product:', error);
+    return { message: 'Failed to update product.' };
+  }
+}
+
+export async function authenticate(prevState, formData) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+}
+
+export async function authenticateAdmin(prevState, formData) {
+  const { email, password } = Object.fromEntries(formData);
+  
+  try {
+    await dbConnect();
+    // Pre-check role before attempting sign-in to give better error message
+    // and prevent non-admins from logging in via this route
+    const user = await User.findOne({ email });
+    
+    if (user && user.role !== 'admin') {
+      return 'Access denied. Admin privileges required.';
+    }
+
+    await signIn('credentials', { 
+      email, 
+      password, 
+      redirectTo: '/admin' 
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid admin credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+}
+
+export async function register(prevState, formData) {
+  const { name, email, password } = Object.fromEntries(formData);
+
+  try {
+    await dbConnect();
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return 'User already exists.';
+    }
+
+    await User.create({ name, email, password });
+  } catch (error) {
+    return 'Failed to register user.';
+  }
+  
+  // Login after registration
+  try {
+    await signIn('credentials', { email, password });
+  } catch (error) {
+    if (error instanceof AuthError) {
+        switch (error.type) {
+          case 'CredentialsSignin':
+            return 'Invalid credentials.';
+          default:
+            return 'Something went wrong.';
+        }
+      }
+      throw error;
+  }
+}
+
+export async function handleSignOut() {
+    await signOut();
+}
