@@ -211,3 +211,50 @@ export async function register(prevState, formData) {
 export async function handleSignOut() {
     await signOut();
 }
+
+export async function createUserByAdmin(prevState, formData) {
+  const name = formData.get('name');
+  const email = formData.get('email');
+  const password = formData.get('password');
+  const role = formData.get('role') || 'user';
+
+  try {
+    await dbConnect();
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return { error: 'User with this email already exists.' };
+    }
+
+    await User.create({ name, email, password, role });
+    revalidatePath('/admin/users');
+    return { success: 'User created successfully!' };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return { error: 'Failed to create user.' };
+  }
+}
+
+export async function toggleUserRole(userId, currentRole) {
+  try {
+    await dbConnect();
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    await User.findByIdAndUpdate(userId, { role: newRole });
+    revalidatePath('/admin/users');
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw new Error('Failed to update user role');
+  }
+}
+
+export async function deleteUser(userId) {
+  try {
+    await dbConnect();
+    await User.findByIdAndDelete(userId);
+    revalidatePath('/admin/users');
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw new Error('Failed to delete user');
+  }
+}
+

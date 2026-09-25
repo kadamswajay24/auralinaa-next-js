@@ -1,5 +1,7 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
+import AddUserModal from './AddUserModal';
+import UserActions from './UserActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +14,10 @@ export default async function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
-          <p className="text-slate-500 text-sm">Overview of all registered users</p>
+          <p className="text-slate-500 text-sm">Create and manage admin & user accounts</p>
         </div>
-        <div className="bg-navy text-white px-4 py-2 rounded-lg text-sm font-semibold">
-          Total Users: {users.length}
+        <div className="flex items-center space-x-3">
+          <AddUserModal />
         </div>
       </div>
 
@@ -28,6 +30,7 @@ export default async function AdminUsersPage() {
                 <th className="px-6 py-4">Email</th>
                 <th className="px-6 py-4">Role</th>
                 <th className="px-6 py-4">Joined Date</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
@@ -54,12 +57,15 @@ export default async function AdminUsersPage() {
                   <td className="px-6 py-4 text-slate-500">
                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                   </td>
+                  <td className="px-6 py-4 text-right">
+                    <UserActions userId={user._id.toString()} currentRole={user.role || 'user'} />
+                  </td>
                 </tr>
               ))}
 
               {users.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan="5" className="px-6 py-8 text-center text-slate-400">
                     No users found in the database.
                   </td>
                 </tr>
