@@ -208,6 +208,8 @@ export async function register(prevState, formData) {
   }
 }
 
+const SUPER_ADMIN_EMAIL = 'admin@auralinaa.com';
+
 export async function handleSignOut() {
     await signOut();
 }
@@ -216,9 +218,18 @@ export async function createUserByAdmin(prevState, formData) {
   const name = formData.get('name');
   const email = formData.get('email');
   const password = formData.get('password');
-  const role = formData.get('role') || 'user';
+  const requestedRole = formData.get('role') || 'user';
 
   try {
+    const session = await auth();
+    const isSuperAdmin = session?.user?.email === SUPER_ADMIN_EMAIL;
+
+    // Only Super Admin can create Admin accounts
+    let role = requestedRole;
+    if (requestedRole === 'admin' && !isSuperAdmin) {
+      return { error: 'Only the Super Admin (admin@auralinaa.com) can create Admin accounts.' };
+    }
+
     await dbConnect();
 
     const existingUser = await User.findOne({ email });
@@ -228,7 +239,7 @@ export async function createUserByAdmin(prevState, formData) {
 
     await User.create({ name, email, password, role });
     revalidatePath('/admin/users');
-    return { success: 'User created successfully!' };
+    return { success: `Successfully created ${role} account!` };
   } catch (error) {
     console.error('Error creating user:', error);
     return { error: 'Failed to create user.' };
@@ -237,24 +248,68 @@ export async function createUserByAdmin(prevState, formData) {
 
 export async function toggleUserRole(userId, currentRole) {
   try {
+    const session = await auth();
+    const currentUserEmail = session?.user?.email;
+    const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
+
+    if (!isSuperAdmin) {
+      throw new Error('Only the Super Admin can change user roles.');
+    }
+
     await dbConnect();
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      throw new Error('User not found.');
+    }
+
+    // Prevent demoting self
+    if (targetUser.email === currentUserEmail) {
+      throw new Error('You cannot demote your own account.');
+    }
+
+    // Prevent demoting Super Admin
+    if (targetUser.email === SUPER_ADMIN_EMAIL) {
+      throw new Error('Super Admin account role cannot be changed.');
+    }
+
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     await User.findByIdAndUpdate(userId, { role: newRole });
     revalidatePath('/admin/users');
   } catch (error) {
     console.error('Error updating user role:', error);
-    throw new Error('Failed to update user role');
+    throw error;
   }
 }
 
 export async function deleteUser(userId) {
   try {
+    const session = await auth();
+    const currentUserEmail = session?.user?.email;
+
     await dbConnect();
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      throw new Error('User not found.');
+    }
+
+    // Prevent self deletion
+    if (targetUser.email === currentUserEmail) {
+      throw new Error('You cannot delete your own account.');
+    }
+
+    // Prevent deleting Super Admin
+    if (targetUser.email === SUPER_ADMIN_EMAIL) {
+      throw new Error('Super Admin account cannot be deleted.');
+    }
+
     await User.findByIdAndDelete(userId);
     revalidatePath('/admin/users');
   } catch (error) {
     console.error('Error deleting user:', error);
-    throw new Error('Failed to delete user');
+    throw error;
   }
 }
+
 

@@ -1,11 +1,18 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
+import { auth } from '@/auth';
 import AddUserModal from './AddUserModal';
 import UserActions from './UserActions';
 
 export const dynamic = 'force-dynamic';
 
+const SUPER_ADMIN_EMAIL = 'admin@auralinaa.com';
+
 export default async function AdminUsersPage() {
+  const session = await auth();
+  const currentUserEmail = session?.user?.email;
+  const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
+
   await dbConnect();
   const users = await User.find({}).sort({ createdAt: -1 }).lean();
 
@@ -14,10 +21,12 @@ export default async function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
-          <p className="text-slate-500 text-sm">Create and manage admin & user accounts</p>
+          <p className="text-slate-500 text-sm">
+            {isSuperAdmin ? 'Super Admin Portal: Full control over admins and users' : 'Admin Portal: Manage customer user accounts'}
+          </p>
         </div>
         <div className="flex items-center space-x-3">
-          <AddUserModal />
+          <AddUserModal isSuperAdmin={isSuperAdmin} />
         </div>
       </div>
 
@@ -58,7 +67,13 @@ export default async function AdminUsersPage() {
                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <UserActions userId={user._id.toString()} currentRole={user.role || 'user'} />
+                    <UserActions 
+                      userId={user._id.toString()} 
+                      currentRole={user.role || 'user'} 
+                      targetEmail={user.email}
+                      currentUserEmail={currentUserEmail}
+                      isSuperAdmin={isSuperAdmin}
+                    />
                   </td>
                 </tr>
               ))}
