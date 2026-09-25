@@ -71,7 +71,8 @@ export default async function AdminProductsPage() {
                       <Link href={`/admin/products/${product._id.toString()}/edit`} className="text-blue-500 hover:text-blue-700" title="Edit">
                         <i className="fas fa-edit"></i>
                       </Link>
-                      <DeleteProductButton id={product._id.toString()} />
+                      <DeleteProductButton id={product._id.toString()} productName={product.name} />
+
                     </div>
                   </td>
                 </tr>
