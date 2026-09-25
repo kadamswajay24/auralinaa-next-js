@@ -20,7 +20,13 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           // Simple password check (should use bcrypt in production)
           if (user.password !== credentials.password) return null;
 
-          return user;
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          };
+
         } catch (error) {
           console.error('Auth error:', error);
           return null;

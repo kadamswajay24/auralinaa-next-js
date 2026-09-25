@@ -253,32 +253,33 @@ export async function toggleUserRole(userId, currentRole) {
     const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
 
     if (!isSuperAdmin) {
-      throw new Error('Only the Super Admin can change user roles.');
+      return { error: 'Only the Super Admin (admin@auralinaa.com) can change user roles.' };
     }
 
     await dbConnect();
 
     const targetUser = await User.findById(userId);
     if (!targetUser) {
-      throw new Error('User not found.');
+      return { error: 'User not found in database.' };
     }
 
     // Prevent demoting self
     if (targetUser.email === currentUserEmail) {
-      throw new Error('You cannot demote your own account.');
+      return { error: 'You cannot demote your own account.' };
     }
 
     // Prevent demoting Super Admin
     if (targetUser.email === SUPER_ADMIN_EMAIL) {
-      throw new Error('Super Admin account role cannot be changed.');
+      return { error: 'Super Admin account role cannot be changed.' };
     }
 
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     await User.findByIdAndUpdate(userId, { role: newRole });
     revalidatePath('/admin/users');
+    return { success: true };
   } catch (error) {
     console.error('Error updating user role:', error);
-    throw error;
+    return { error: 'Failed to update user role.' };
   }
 }
 
@@ -291,25 +292,27 @@ export async function deleteUser(userId) {
 
     const targetUser = await User.findById(userId);
     if (!targetUser) {
-      throw new Error('User not found.');
+      return { error: 'User not found in database.' };
     }
 
     // Prevent self deletion
     if (targetUser.email === currentUserEmail) {
-      throw new Error('You cannot delete your own account.');
+      return { error: 'You cannot delete your own account.' };
     }
 
     // Prevent deleting Super Admin
     if (targetUser.email === SUPER_ADMIN_EMAIL) {
-      throw new Error('Super Admin account cannot be deleted.');
+      return { error: 'Super Admin account cannot be deleted.' };
     }
 
     await User.findByIdAndDelete(userId);
     revalidatePath('/admin/users');
+    return { success: true };
   } catch (error) {
     console.error('Error deleting user:', error);
-    throw error;
+    return { error: 'Failed to delete user.' };
   }
 }
+
 
 

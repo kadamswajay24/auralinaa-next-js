@@ -29,6 +29,9 @@ export const authConfig = {
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }
+      if (token.email && session.user) {
+        session.user.email = token.email;
+      }
       if (token.role && session.user) {
         session.user.role = token.role;
       }
@@ -37,9 +40,11 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
+        token.email = user.email;
       }
       return token;
     },
+
   },
   providers: [], // Add providers with an empty array for now
 };

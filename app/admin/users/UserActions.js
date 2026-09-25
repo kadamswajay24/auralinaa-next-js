@@ -16,11 +16,11 @@ export default function UserActions({ userId, currentRole, targetEmail, currentU
   const handleRoleAction = () => {
     setErrorMsg('');
     startTransition(async () => {
-      try {
-        await toggleUserRole(userId, currentRole);
+      const res = await toggleUserRole(userId, currentRole);
+      if (res?.error) {
+        setErrorMsg(res.error);
+      } else {
         setActiveModal(null);
-      } catch (err) {
-        setErrorMsg(err.message || 'Failed to update role');
       }
     });
   };
@@ -28,14 +28,15 @@ export default function UserActions({ userId, currentRole, targetEmail, currentU
   const handleDeleteAction = () => {
     setErrorMsg('');
     startTransition(async () => {
-      try {
-        await deleteUser(userId);
+      const res = await deleteUser(userId);
+      if (res?.error) {
+        setErrorMsg(res.error);
+      } else {
         setActiveModal(null);
-      } catch (err) {
-        setErrorMsg(err.message || 'Failed to delete user');
       }
     });
   };
+
 
   if (isSelf) {
     return <span className="text-xs font-semibold text-slate-400 italic">Current User</span>;
