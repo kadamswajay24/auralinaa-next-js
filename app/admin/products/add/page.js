@@ -1,11 +1,22 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { addProduct } from '@/app/lib/actions';
 import Link from 'next/link';
 
 export default function AddProductPage() {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(addProduct, null);
+
+  useEffect(() => {
+    if (state?.message && state.message.includes('success')) {
+      const timer = setTimeout(() => {
+        router.push('/admin/products');
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [state, router]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -78,14 +89,19 @@ export default function AddProductPage() {
           </div>
 
           <div className="pt-4">
-            <button type="submit" disabled={isPending} className="w-full bg-coral hover:bg-coral-dark text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-              {isPending ? 'Adding Product...' : 'Add Product'}
+            <button 
+              type="submit" 
+              disabled={isPending} 
+              className="w-full bg-coral hover:bg-coral-dark text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {isPending && <i className="fas fa-spinner fa-spin text-lg"></i>}
+              <span>{isPending ? 'Adding Product...' : 'Add Product'}</span>
             </button>
           </div>
 
           {state?.message && (
-            <div className={`p-4 rounded-lg text-center ${state.message.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-              {state.message}
+            <div className={`p-4 rounded-lg text-center font-semibold ${state.message.includes('success') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+              {state.message} {state.message.includes('success') && 'Redirecting...'}
             </div>
           )}
         </form>
