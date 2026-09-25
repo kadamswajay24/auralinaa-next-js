@@ -5,7 +5,10 @@ import Product from '@/models/Product';
 import { toggleProductStock } from '@/app/lib/actions';
 import DeleteProductButton from './DeleteProductButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminProductsPage() {
+
   await dbConnect();
   const productsRaw = await Product.find({}).sort({ createdAt: -1 }).lean();
   const products = productsRaw.map(product => ({

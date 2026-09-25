@@ -1,17 +1,15 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
-// import Order from '@/models/Order'; // Will be created later
-// import Product from '@/models/Product'; // Will be created later
+import Product from '@/models/Product';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   await dbConnect();
   const userCount = await User.countDocuments();
-  // const orderCount = await Order.countDocuments();
-  // const productCount = await Product.countDocuments();
+  const productCount = await Product.countDocuments();
   
-  // Mocks for now until models exist
   const orderCount = 0; 
-  const productCount = 12; // Static products count
   const revenue = 0;
 
   return (
