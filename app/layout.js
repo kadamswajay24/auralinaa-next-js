@@ -1,5 +1,6 @@
 import { Outfit, Dancing_Script } from 'next/font/google';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 const dancing = Dancing_Script({ subsets: ['latin'], variable: '--font-dancing', weight: '700' });
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${outfit.variable} ${dancing.variable} font-outfit`}>
         {children}
+        <Analytics />
       </body>
     </html>
   );
