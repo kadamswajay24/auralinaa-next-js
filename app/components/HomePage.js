@@ -94,6 +94,7 @@ export default function HomePage({ user, products }) {
             alt="Fishermen on Boat"
             fill
             sizes="100vw"
+            unoptimized
             className="object-cover brightness-50"
             priority
           />
@@ -124,6 +125,7 @@ export default function HomePage({ user, products }) {
               alt="Sustainable Fishing"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
+              unoptimized
               className="object-cover"
             />
           </div>
@@ -200,6 +202,7 @@ export default function HomePage({ user, products }) {
                                  src={product.image}
                                  alt={product.name}
                                  fill
+                                 unoptimized
                                  className="object-cover"
                              />
                          </div>
